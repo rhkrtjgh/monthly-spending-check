@@ -10,6 +10,9 @@ const {
   DECRYPTION_KEY_BASE64,
   AUTH_API_BASE,
   PORT,
+  SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY,
+  SUPABASE_JWT_SECRET,
 } = process.env;
 
 module.exports = {
@@ -21,4 +24,7 @@ module.exports = {
     AUTH_API_BASE ||
     "https://apps-in-toss-api.toss.im/api-partner/v1/apps-in-toss/user/oauth2",
   PORT: PORT || 4000,
+  SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY,
+  SUPABASE_JWT_SECRET,
 };

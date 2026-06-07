@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="expense-living" viewBox="0 0 24 24">
+    <path fill="none" stroke="#FF91D5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H5.5A1.5 1.5 0 0 1 4 19v-8.5Z"/>
+    <path fill="#FFD6EC" stroke="#FF91D5" stroke-width="1.8" stroke-linecap="round" d="M9.5 20.5V14h5v6.5"/>
+  </symbol>
+  <symbol id="expense-subscription" viewBox="0 0 24 24">
+    <rect x="4" y="6" width="16" height="12" rx="2" fill="#E8EDFF" stroke="#6B7CFF" stroke-width="1.8"/>
+    <path fill="none" stroke="#6B7CFF" stroke-width="1.8" stroke-linecap="round" d="M8 10h8M8 14h5"/>
+    <path fill="none" stroke="#8B9AFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M18 4v3M18 17v3M21 7h-3M21 14h-3"/>
+  </symbol>
+  <symbol id="expense-food" viewBox="0 0 24 24">
+    <path fill="none" stroke="#FF8C42" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M6 10V4M6 10c0 2.2 1.8 4 4 4"/>
+    <path fill="none" stroke="#FFB36B" stroke-width="1.8" stroke-linecap="round" d="M10 14v6"/>
+    <path fill="none" stroke="#FF8C42" stroke-width="1.8" stroke-linecap="round" d="M14 4v16"/>
+    <path fill="#FFE2CC" stroke="#FF8C42" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M18 8c2 0 2-2 2-4s-1-4-2-4-2 2-2 4 1 4 2 4Z"/>
+  </symbol>
+  <symbol id="expense-housing" viewBox="0 0 24 24">
+    <path fill="#DCEAFF" stroke="#4B8BFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M5 18V9l7-5 7 5v9"/>
+    <path fill="#F3F8FF" stroke="#4B8BFF" stroke-width="1.8" stroke-linecap="round" d="M9.5 18v-4h5v4"/>
+    <path fill="none" stroke="#6EA4FF" stroke-width="1.8" stroke-linecap="round" d="M17 8.5v2M19 9.5h-4"/>
+  </symbol>
+  <symbol id="expense-transport" viewBox="0 0 24 24">
+    <path fill="#D6F5F2" stroke="#2EC4B6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M6 8h12l1.5 4H4.5L6 8Z"/>
+    <circle cx="6.5" cy="16.5" r="1.5" fill="#2EC4B6"/>
+    <circle cx="17.5" cy="16.5" r="1.5" fill="#2EC4B6"/>
+    <path fill="none" stroke="#2EC4B6" stroke-width="1.8" stroke-linecap="round" d="M7 12h10"/>
+  </symbol>
+  <symbol id="expense-shopping-beauty" viewBox="0 0 24 24">
+    <path fill="none" stroke="#D96CFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8 8V6a4 4 0 1 1 8 0v2"/>
+    <path fill="#F8E6FF" stroke="#D96CFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M6 8h12l-1.2 10H7.2L6 8Z"/>
+    <path fill="none" stroke="#E89BFF" stroke-width="1.8" stroke-linecap="round" d="M12 3v2"/>
+  </symbol>
+  <symbol id="expense-health-culture" viewBox="0 0 24 24">
+    <path fill="#D8F8E7" stroke="#2ECC71" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 20s-6-4.2-6-9a4 4 0 0 1 7-2.4A4 4 0 0 1 18 11c0 4.8-6 9-6 9Z"/>
+    <path fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" d="M12 10v4M10 12h4"/>
+  </symbol>
+  <symbol id="expense-etc" viewBox="0 0 24 24">
+    <circle cx="7" cy="12" r="1.5" fill="#B0B8C1"/>
+    <circle cx="12" cy="12" r="1.5" fill="#8B95A1"/>
+    <circle cx="17" cy="12" r="1.5" fill="#B0B8C1"/>
+  </symbol>
+  <symbol id="expense-media" viewBox="0 0 24 24">
+    <rect x="4" y="6" width="16" height="12" rx="2" fill="#FFE3E3" stroke="#FF6B6B" stroke-width="1.8"/>
+    <path fill="#FF6B6B" stroke="#FF6B6B" stroke-width="1.8" stroke-linejoin="round" d="M10 9.5v5l4.5-2.5L10 9.5Z"/>
+  </symbol>
+  <symbol id="expense-shopping-benefit" viewBox="0 0 24 24">
+    <path fill="#FFEAB8" stroke="#FFB020" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 4 13.8 8.2 18.5 8.7 15 11.8l1 4.7L12 14.8 8 16.5l1-4.7-3.5-3.1 4.7-.5L12 4Z"/>
+  </symbol>
+  <symbol id="expense-life-convenience" viewBox="0 0 24 24">
+    <path fill="#DDF0FF" stroke="#45AAF2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8 4h8v16H8V4Z"/>
+    <path fill="none" stroke="#45AAF2" stroke-width="1.8" stroke-linecap="round" d="M10 8h4M10 12h4"/>
+    <path fill="none" stroke="#6CBEF5" stroke-width="1.8" stroke-linecap="round" d="M9 20h6"/>
+  </symbol>
+  <symbol id="expense-self-dev" viewBox="0 0 24 24">
+    <path fill="#EDE2FF" stroke="#9B59B6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M6 6h11a2 2 0 0 1 2 2v10H8a2 2 0 0 1-2-2V6Z"/>
+    <path fill="none" stroke="#9B59B6" stroke-width="1.8" stroke-linecap="round" d="M6 18h13"/>
+    <path fill="none" stroke="#B07CCF" stroke-width="1.8" stroke-linecap="round" d="M9 10h6"/>
+  </symbol>
+  <symbol id="expense-work-it" viewBox="0 0 24 24">
+    <rect x="4" y="5" width="16" height="11" rx="1.5" fill="#E3EAFF" stroke="#3867D6" stroke-width="1.8"/>
+    <path fill="none" stroke="#3867D6" stroke-width="1.8" stroke-linecap="round" d="M9 19h6"/>
+    <path fill="none" stroke="#5A82E0" stroke-width="1.8" stroke-linecap="round" d="M8 16h8"/>
+    <path fill="none" stroke="#3867D6" stroke-width="1.8" stroke-linecap="round" d="M12 9v3"/>
+  </symbol>
+</svg>

@@ -11,10 +11,12 @@ export interface UserProfile {
 export interface LoginResponse {
   sessionToken: string;
   user: UserProfile;
+  supabaseAccessToken?: string;
 }
 
 export interface MeResponse {
   user: UserProfile;
+  supabaseAccessToken?: string;
 }
 
 export interface MigrateExpensesResponse {

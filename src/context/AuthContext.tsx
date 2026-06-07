@@ -15,16 +15,20 @@ import {
   fetchMe,
   loginWithAuthorizationCode,
   logout as logoutApi,
-  migrateGuestExpenses,
   refreshSession,
 } from "../lib/auth/api";
+import { upsertCustomer } from "../lib/supabase/customerRepository";
+import { insertExpenses } from "../lib/supabase/expenseRepository";
+import { setSupabaseAccessToken } from "../supabase/session";
+import {
+  clearExpenses,
+  getExpenses,
+  hasExpenses,
+} from "../lib/storage/expenseStorage";
 import {
   clearAuthStorage,
-  clearGuestExpenses,
   getAuthMode,
-  getGuestExpenses,
   getSessionToken,
-  hasGuestExpenses,
   isMigrationCompleted,
   isOnboardingCompleted,
   setAuthMode,
@@ -75,25 +79,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const migrateIfNeeded = useCallback(async (sessionToken: string) => {
-    if (isMigrationCompleted() || !hasGuestExpenses()) {
+  const migrateIfNeeded = useCallback(async (userKey: number) => {
+    if (isMigrationCompleted() || !hasExpenses()) {
       return;
     }
 
-    const expenses = getGuestExpenses();
-    await migrateGuestExpenses(sessionToken, expenses);
-    clearGuestExpenses();
+    const expenses = getExpenses();
+    await insertExpenses(userKey, expenses);
+    clearExpenses();
     setMigrationCompleted();
   }, []);
 
   const establishLoggedInSession = useCallback(
-    async (sessionToken: string, profile: UserProfile) => {
+    async (
+      sessionToken: string,
+      profile: UserProfile,
+      supabaseAccessToken?: string,
+    ) => {
       setSessionToken(sessionToken);
       setAuthMode("logged_in");
       setOnboardingCompleted();
       setAuthModeState("logged_in");
       setUser(profile);
-      await migrateIfNeeded(sessionToken);
+
+      if (supabaseAccessToken) {
+        await setSupabaseAccessToken(supabaseAccessToken);
+      }
+
+      await upsertCustomer(profile);
+      await migrateIfNeeded(profile.userKey);
     },
     [migrateIfNeeded],
   );
@@ -101,13 +115,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const restoreSession = useCallback(
     async (sessionToken: string): Promise<boolean> => {
       try {
-        const { user: profile } = await fetchMe(sessionToken);
-        await establishLoggedInSession(sessionToken, profile);
+        const { user: profile, supabaseAccessToken } = await fetchMe(sessionToken);
+        await establishLoggedInSession(
+          sessionToken,
+          profile,
+          supabaseAccessToken,
+        );
         return true;
       } catch {
         try {
-          const { user: profile } = await refreshSession(sessionToken);
-          await establishLoggedInSession(sessionToken, profile);
+          const { user: profile, supabaseAccessToken } =
+            await refreshSession(sessionToken);
+          await establishLoggedInSession(
+            sessionToken,
+            profile,
+            supabaseAccessToken,
+          );
           return true;
         } catch {
           clearAuthStorage();
@@ -120,11 +143,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const performTossLogin = useCallback(async () => {
     const { authorizationCode, referrer } = await appLogin();
-    const { sessionToken, user: profile } = await loginWithAuthorizationCode(
-      authorizationCode,
-      referrer,
-    );
-    await establishLoggedInSession(sessionToken, profile);
+    const { sessionToken, user: profile, supabaseAccessToken } =
+      await loginWithAuthorizationCode(authorizationCode, referrer);
+    await establishLoggedInSession(sessionToken, profile, supabaseAccessToken);
   }, [establishLoggedInSession]);
 
   const resolveEntry = useCallback(async () => {
@@ -246,6 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (logoutError) {
       console.warn(logoutError);
     } finally {
+      await setSupabaseAccessToken(null);
       clearAuthStorage();
       setAuthModeState("guest");
       setUser(null);

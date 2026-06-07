@@ -1,6 +1,8 @@
 const authService = require("../services/auth.service");
 const sessionStore = require("../services/sessionStore");
 const decryptUserInfo = require("../utils/decryptUserInfo");
+const signSupabaseJwt = require("../utils/signSupabaseJwt");
+const { SUPABASE_JWT_SECRET } = require("../../env.config");
 
 function extractBirthYear(birthday) {
   if (!birthday || birthday.length < 4) {
@@ -16,6 +18,17 @@ function toPublicUser(decryptedUser) {
     userKey: decryptedUser.userKey,
     gender: decryptedUser.gender ?? null,
     birthYear: extractBirthYear(decryptedUser.birthday),
+  };
+}
+
+function withSupabaseAccessToken(userKey, body) {
+  if (!SUPABASE_JWT_SECRET) {
+    return body;
+  }
+
+  return {
+    ...body,
+    supabaseAccessToken: signSupabaseJwt(userKey, SUPABASE_JWT_SECRET),
   };
 }
 
@@ -66,10 +79,12 @@ exports.login = async (req, res) => {
       user,
     });
 
-    return res.status(200).json({
-      sessionToken: session.sessionToken,
-      user,
-    });
+    return res.status(200).json(
+      withSupabaseAccessToken(user.userKey, {
+        sessionToken: session.sessionToken,
+        user,
+      }),
+    );
   } catch (error) {
     console.error("login failed:", error);
     return res.status(500).json({ error: error.message });
@@ -85,7 +100,9 @@ exports.me = async (req, res) => {
       return res.status(401).json({ error: "유효하지 않은 세션입니다." });
     }
 
-    return res.status(200).json({ user: session.user });
+    return res
+      .status(200)
+      .json(withSupabaseAccessToken(session.userKey, { user: session.user }));
   } catch (error) {
     console.error("me failed:", error);
     return res.status(500).json({ error: error.message });
@@ -119,7 +136,9 @@ exports.refreshSession = async (req, res) => {
     const decryptedUser = decryptUserInfo(userResult.success);
     session.user = toPublicUser(decryptedUser);
 
-    return res.status(200).json({ user: session.user });
+    return res
+      .status(200)
+      .json(withSupabaseAccessToken(session.userKey, { user: session.user }));
   } catch (error) {
     console.error("refreshSession failed:", error);
     return res.status(401).json({ error: error.message });
