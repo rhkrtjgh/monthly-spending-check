@@ -9,7 +9,12 @@ import { useMemo, useState, type CSSProperties } from "react";
 
 import config from "../../../granite.config.ts";
 import { getSubCategoryOptions, getSubCategoryPlaceholder } from "../../constants/expenseSubCategories";
-import { convertToMonthlyAmount, getAmountInputHint } from "../../lib/expense/convertToMonthlyAmount";
+import { getAmountInputHint } from "../../lib/expense/convertToMonthlyAmount";
+import { parseAmountInput } from "../../lib/expense/parseAmountInput";
+import {
+  buildExpenseItemFromDraft,
+  isExpenseDraftComplete,
+} from "../../lib/expense/buildExpenseItem";
 import { MainCategoryIcon, SubCategoryIcon } from "./CategoryIcon";
 import type {
   ExpenseCategory,
@@ -64,52 +69,6 @@ interface ExpenseInputFlowProps {
   showSkip?: boolean;
   onComplete: (item: ExpenseItem) => void;
   onClose?: () => void;
-}
-
-function formatStoredSubCategory(draft: ExpenseFormDraft): string {
-  const itemName = draft.sub_category.trim();
-  if (draft.sub_category_group) {
-    return `${draft.sub_category_group} · ${itemName}`;
-  }
-  return itemName;
-}
-
-function buildExpenseItem(draft: ExpenseFormDraft): ExpenseItem | null {
-  if (
-    !draft.category ||
-    !draft.sub_category_group ||
-    !draft.sub_category.trim()
-  ) {
-    return null;
-  }
-
-  const amount = Number.parseInt(draft.amount.replace(/,/g, ""), 10);
-  if (!Number.isFinite(amount) || amount <= 0 || !draft.frequency) {
-    return null;
-  }
-
-  const monthlyAmount = convertToMonthlyAmount(amount, draft.frequency);
-
-  const item: ExpenseItem = {
-    category: draft.category,
-    sub_category: formatStoredSubCategory(draft),
-    amount: monthlyAmount,
-    frequency: EXPENSE_FREQUENCY.MONTH,
-  };
-
-  if (
-    draft.frequency === EXPENSE_FREQUENCY.MONTH &&
-    draft.due_date.trim()
-  ) {
-    const dueDate = Number.parseInt(draft.due_date, 10);
-    if (dueDate >= 1 && dueDate <= 31) {
-      item.due_date = dueDate;
-    }
-  }
-
-  item.reg_date = new Date().toISOString();
-
-  return item;
 }
 
 function StepFooter({
@@ -210,7 +169,7 @@ export function ExpenseInputFlow({
   const canProceedStep2 = draft.sub_category_group !== null;
   const canProceedStep3 = draft.sub_category.trim().length > 0;
   const canCompleteStep4 =
-    draft.frequency !== null && buildExpenseItem(draft) !== null;
+    draft.frequency !== null && isExpenseDraftComplete(draft);
 
   const amountInputHint = getAmountInputHint(draft.frequency);
 
@@ -224,7 +183,7 @@ export function ExpenseInputFlow({
   };
 
   const handleComplete = () => {
-    const item = buildExpenseItem(draft);
+    const item = buildExpenseItemFromDraft(draft);
     if (!item) {
       return;
     }
@@ -399,6 +358,9 @@ export function ExpenseInputFlow({
                     frequency: value as ExpenseFrequency,
                     due_date:
                       value === EXPENSE_FREQUENCY.MONTH ? prev.due_date : "",
+                    amount: prev.amount
+                      ? parseAmountInput(prev.amount, value as ExpenseFrequency)
+                      : prev.amount,
                   }))
                 }
               >
@@ -424,7 +386,10 @@ export function ExpenseInputFlow({
                 onChange={(event) =>
                   setDraft((prev) => ({
                     ...prev,
-                    amount: event.target.value.replace(/[^\d]/g, ""),
+                    amount: parseAmountInput(
+                      event.target.value,
+                      draft.frequency,
+                    ),
                   }))
                 }
               />

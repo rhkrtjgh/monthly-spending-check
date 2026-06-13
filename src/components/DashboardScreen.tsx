@@ -10,14 +10,17 @@ import {
   EXPENSE_SORT_OPTIONS,
   sortExpenses,
 } from "../lib/expense/sortExpenses";
-import { addExpense, getExpenses, hasExpenses } from "../lib/storage/expenseStorage";
+import { addExpense, deleteExpenses, getExpenses, hasExpenses, updateExpense } from "../lib/storage/expenseStorage";
 import {
   isInitialGuideCompleted,
   setInitialGuideCompleted,
 } from "../lib/storage/localStorage";
 import type { ExpenseItem, ExpenseSortOrder } from "../types/expense";
 import { MainCategoryIcon } from "./expense/CategoryIcon";
+import { ExpenseDeleteModal } from "./expense/ExpenseDeleteModal";
+import { ExpenseDetailModal } from "./expense/ExpenseDetailModal";
 import { ExpenseInputFlow } from "./expense/ExpenseInputFlow";
+import { SortSelect } from "./expense/SortSelect";
 import "./DashboardScreen.css";
 
 function formatAmount(amount: number) {
@@ -76,6 +79,11 @@ export function DashboardScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<ExpenseSortOrder>("latest");
   const [sortReverse, setSortReverse] = useState(false);
+  const [editingItem, setEditingItem] = useState<ExpenseItem | null>(null);
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   useEffect(() => {
     setLoadError(null);
@@ -164,6 +172,58 @@ export function DashboardScreen() {
     setIsInitialInput(false);
     setIsInputOpen(true);
   }, []);
+
+  const handleUpdateExpense = useCallback((item: ExpenseItem) => {
+    setLoadError(null);
+
+    try {
+      updateExpense(item);
+      setExpenses(getExpenses());
+      setEditingItem(null);
+    } catch (error) {
+      console.error(error);
+      setLoadError(
+        error instanceof Error ? error.message : "지출 수정에 실패했습니다.",
+      );
+    }
+  }, []);
+
+  const startDeleteMode = useCallback(() => {
+    setEditingItem(null);
+    setPendingDeleteIds(new Set());
+    setIsDeleteMode(true);
+  }, []);
+
+  const cancelDeleteMode = useCallback(() => {
+    setPendingDeleteIds(new Set());
+    setIsDeleteMode(false);
+  }, []);
+
+  const markForDelete = useCallback((id: string) => {
+    setPendingDeleteIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }, []);
+
+  const applyDeleteMode = useCallback(() => {
+    setLoadError(null);
+
+    try {
+      if (pendingDeleteIds.size > 0) {
+        deleteExpenses([...pendingDeleteIds]);
+        setExpenses(getExpenses());
+      }
+      setPendingDeleteIds(new Set());
+      setIsDeleteMode(false);
+    } catch (error) {
+      console.error(error);
+      setLoadError(
+        error instanceof Error ? error.message : "항목 삭제에 실패했습니다.",
+      );
+    }
+  }, [pendingDeleteIds]);
 
   return (
     <div className="dashboard-screen">
@@ -255,20 +315,11 @@ export function DashboardScreen() {
               <h2 className="dashboard-screen__list-title">등록한 항목</h2>
               {expenses.length > 0 ? (
                 <div className="dashboard-screen__list-controls">
-                  <select
-                    className="dashboard-screen__sort-select"
+                  <SortSelect
                     value={sortOrder}
-                    onChange={(event) =>
-                      setSortOrder(event.target.value as ExpenseSortOrder)
-                    }
-                    aria-label="정렬 기준"
-                  >
-                    {EXPENSE_SORT_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                    options={EXPENSE_SORT_OPTIONS}
+                    onChange={setSortOrder}
+                  />
                   <button
                     type="button"
                     className={`dashboard-screen__sort-reverse${
@@ -285,9 +336,16 @@ export function DashboardScreen() {
                 </div>
               ) : null}
             </div>
-            <Button size="small" variant="weak" onClick={openAddFlow}>
-              추가
-            </Button>
+            <div className="dashboard-screen__list-actions">
+              {expenses.length > 0 ? (
+                <Button size="small" variant="weak" onClick={startDeleteMode}>
+                  편집
+                </Button>
+              ) : null}
+              <Button size="small" variant="weak" onClick={openAddFlow}>
+                추가
+              </Button>
+            </div>
           </div>
 
           <div className="dashboard-screen__list-scroll">
@@ -301,35 +359,45 @@ export function DashboardScreen() {
               <ul className="dashboard-screen__list">
                 {sortedExpenses.map((item, index) => {
                   const itemMeta = formatExpenseMeta(item);
+                  const itemId =
+                    item.id ??
+                    `${item.sub_category}-${item.amount}-${item.reg_date ?? index}`;
 
                   return (
                   <li
-                    key={`${item.sub_category}-${item.amount}-${item.reg_date ?? index}`}
+                    key={itemId}
                     className="dashboard-screen__list-item"
                   >
-                    <div className="dashboard-screen__item-row">
-                      <div className="dashboard-screen__item-main">
-                        <span
-                          className="dashboard-screen__item-icon"
-                          aria-label={item.category}
-                        >
-                          <MainCategoryIcon category={item.category} />
-                        </span>
-                        <div className="dashboard-screen__item-text">
-                          <p className="dashboard-screen__item-name">
-                            {item.sub_category}
-                          </p>
-                          {itemMeta ? (
-                            <p className="dashboard-screen__item-meta">
-                              {itemMeta}
+                    <button
+                      type="button"
+                      className="dashboard-screen__item-button"
+                      aria-label={`${item.sub_category} 수정`}
+                      onClick={() => setEditingItem(item)}
+                    >
+                      <div className="dashboard-screen__item-row">
+                        <div className="dashboard-screen__item-main">
+                          <span
+                            className="dashboard-screen__item-icon"
+                            aria-hidden="true"
+                          >
+                            <MainCategoryIcon category={item.category} />
+                          </span>
+                          <div className="dashboard-screen__item-text">
+                            <p className="dashboard-screen__item-name">
+                              {item.sub_category}
                             </p>
-                          ) : null}
+                            {itemMeta ? (
+                              <p className="dashboard-screen__item-meta">
+                                {itemMeta}
+                              </p>
+                            ) : null}
+                          </div>
                         </div>
+                        <p className="dashboard-screen__item-amount">
+                          {formatAmount(item.amount)}
+                        </p>
                       </div>
-                      <p className="dashboard-screen__item-amount">
-                        {formatAmount(item.amount)}
-                      </p>
-                    </div>
+                    </button>
                   </li>
                   );
                 })}
@@ -345,6 +413,24 @@ export function DashboardScreen() {
         showSkip={isInitialInput}
         onComplete={handleComplete}
         onClose={handleCloseInput}
+      />
+
+      <ExpenseDetailModal
+        open={editingItem !== null && !isDeleteMode}
+        item={editingItem}
+        onClose={() => setEditingItem(null)}
+        onSave={handleUpdateExpense}
+      />
+
+      <ExpenseDeleteModal
+        open={isDeleteMode}
+        items={sortedExpenses}
+        pendingDeleteIds={pendingDeleteIds}
+        formatAmount={formatAmount}
+        formatExpenseMeta={formatExpenseMeta}
+        onMarkDelete={markForDelete}
+        onCancel={cancelDeleteMode}
+        onComplete={applyDeleteMode}
       />
     </div>
   );

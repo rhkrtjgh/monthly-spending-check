@@ -22,11 +22,11 @@ export function convertToMonthlyAmount(
 export function getAmountInputHint(frequency: ExpenseFrequency | null): string {
   switch (frequency) {
     case EXPENSE_FREQUENCY.WEEK:
-      return "주당 금액을 입력해 주세요. 저장 시 월 금액으로 환산돼요.";
+      return "주당 금액을 입력해 주세요. 저장 시 월 금액으로 환산돼요. (최대 1억원)";
     case EXPENSE_FREQUENCY.YEAR:
-      return "연간 금액을 입력해 주세요. 저장 시 월 금액으로 환산돼요.";
+      return "연간 금액을 입력해 주세요. 저장 시 월 금액으로 환산돼요. (최대 10억원)";
     case EXPENSE_FREQUENCY.MONTH:
-      return "월 결제 금액을 입력해 주세요.";
+      return "월 결제 금액을 입력해 주세요. (최대 1억원)";
     default:
       return "빈도를 먼저 선택해 주세요.";
   }

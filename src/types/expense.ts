@@ -19,6 +19,7 @@ export type ExpenseSortOrder = "latest" | "amount" | "category";
 
 /** TS_MNA_EXP_INFO 컬럼과 동일 (userKey 제외) */
 export interface ExpenseItem {
+  id?: string;
   category: ExpenseCategory;
   sub_category: string;
   amount: number;

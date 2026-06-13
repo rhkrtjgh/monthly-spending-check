@@ -1,0 +1,134 @@
+.expense-delete-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1002;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  height: 100dvh;
+  background: #ffffff;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.expense-delete-modal__body {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 20px 16px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.expense-delete-modal__empty {
+  padding: 32px 16px;
+  border-radius: 12px;
+  background-color: #f9fafb;
+  text-align: center;
+  color: #6b7684;
+  line-height: 1.6;
+}
+
+.expense-delete-modal__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.expense-delete-modal__list-item {
+  border-radius: 12px;
+  background-color: #ffffff;
+  border: 1px solid #eef1f4;
+  overflow: hidden;
+}
+
+.expense-delete-modal__item-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+
+.expense-delete-modal__delete-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: #f04452;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.expense-delete-modal__delete-toggle:active {
+  background: #e42939;
+}
+
+.expense-delete-modal__item-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.expense-delete-modal__item-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.expense-delete-modal__item-icon .category-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+
+.expense-delete-modal__item-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.expense-delete-modal__item-name {
+  margin: 0;
+  font-weight: 600;
+}
+
+.expense-delete-modal__item-meta {
+  margin: 4px 0 0;
+  color: #8b95a1;
+  font-size: 13px;
+}
+
+.expense-delete-modal__item-amount {
+  margin: 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.expense-delete-modal__footer {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 100%;
+  padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0) 0%,
+    #ffffff 24%
+  );
+}
