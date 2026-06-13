@@ -4,14 +4,43 @@
   z-index: 1000;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  height: 100dvh;
   background: #ffffff;
   overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.expense-input-flow__header-action {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 20px 8px;
+}
+
+.expense-input-flow__dismiss,
+.expense-input-flow__skip {
+  border: none;
+  background: transparent;
+  color: #8b95a1;
+  font-size: 15px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.expense-input-flow__skip {
+  font-weight: 600;
 }
 
 .expense-input-flow__body {
   flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
-  padding: 0 20px 120px;
+  overscroll-behavior: contain;
+  padding: 0 20px 16px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .expense-input-flow__step-label {
@@ -42,6 +71,7 @@
   transition:
     border-color 0.15s ease,
     background-color 0.15s ease;
+  box-sizing: border-box;
 }
 
 .expense-input-flow__category-body {
@@ -130,10 +160,9 @@
 }
 
 .expense-input-flow__footer {
-  position: fixed;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 100%;
   padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px));
   background: linear-gradient(
     180deg,

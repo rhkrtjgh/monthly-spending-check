@@ -1,18 +1,31 @@
 import { Button, Top } from "@toss/tds-mobile";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { useAuth } from "../hooks/useAuth";
-import { insertExpense, listExpenses } from "../lib/supabase/expenseRepository";
+import {
+  getCategoryIconColor,
+  getMainCategoryIconId,
+  getSubCategoryIconId,
+} from "../constants/expenseCategoryIcons";
+import {
+  EXPENSE_SORT_OPTIONS,
+  sortExpenses,
+} from "../lib/expense/sortExpenses";
 import { addExpense, getExpenses, hasExpenses } from "../lib/storage/expenseStorage";
-import type { ExpenseItem } from "../types/expense";
+import {
+  isInitialGuideCompleted,
+  setInitialGuideCompleted,
+} from "../lib/storage/localStorage";
+import type { ExpenseItem, ExpenseSortOrder } from "../types/expense";
+import { MainCategoryIcon } from "./expense/CategoryIcon";
 import { ExpenseInputFlow } from "./expense/ExpenseInputFlow";
+import "./DashboardScreen.css";
 
 function formatAmount(amount: number) {
   return `${amount.toLocaleString("ko-KR")}원`;
 }
 
 function formatExpenseMeta(item: ExpenseItem) {
-  const parts: string[] = [item.category];
+  const parts: string[] = [];
   if (item.due_date) {
     parts.push(`매월 ${item.due_date}일`);
   }
@@ -22,61 +35,58 @@ function formatExpenseMeta(item: ExpenseItem) {
   return parts.join(" · ");
 }
 
+function getExpenseDisplayName(subCategory: string) {
+  const parts = subCategory.split(" · ");
+  return parts.length > 1 ? parts.slice(1).join(" · ") : subCategory;
+}
+
+function getExpenseAccentColor(item: ExpenseItem) {
+  const [group] = item.sub_category.split(" · ");
+  const iconId = group
+    ? getSubCategoryIconId(group)
+    : getMainCategoryIconId(item.category);
+
+  return getCategoryIconColor(iconId).accent;
+}
+
+function formatSharePercent(share: number) {
+  if (share >= 10) {
+    return `${Math.round(share)}%`;
+  }
+  if (share >= 1) {
+    return `${Math.round(share * 10) / 10}%`;
+  }
+  if (share > 0) {
+    return `${Math.round(share * 10) / 10}%`;
+  }
+  return "0%";
+}
+
+interface ExpenseShareItem {
+  id: string;
+  label: string;
+  share: number;
+  color: string;
+}
+
 export function DashboardScreen() {
-  const { authMode, user } = useAuth();
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [isInputOpen, setIsInputOpen] = useState(false);
   const [isInitialInput, setIsInitialInput] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<ExpenseSortOrder>("latest");
+  const [sortReverse, setSortReverse] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
+    setLoadError(null);
 
-    async function loadExpenses() {
-      setLoadError(null);
-
-      try {
-        if (authMode === "logged_in" && user) {
-          const items = await listExpenses(user.userKey);
-          if (cancelled) {
-            return;
-          }
-          setExpenses(items);
-          if (items.length === 0) {
-            setIsInitialInput(true);
-            setIsInputOpen(true);
-          }
-          return;
-        }
-
-        const items = getExpenses();
-        if (cancelled) {
-          return;
-        }
-        setExpenses(items);
-        if (!hasExpenses()) {
-          setIsInitialInput(true);
-          setIsInputOpen(true);
-        }
-      } catch (error) {
-        if (cancelled) {
-          return;
-        }
-        console.error(error);
-        setLoadError(
-          error instanceof Error
-            ? error.message
-            : "지출 데이터를 불러오지 못했습니다.",
-        );
-      }
+    const items = getExpenses();
+    setExpenses(items);
+    if (!hasExpenses() && !isInitialGuideCompleted()) {
+      setIsInitialInput(true);
+      setIsInputOpen(true);
     }
-
-    void loadExpenses();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authMode, user]);
+  }, []);
 
   const totalAmount = useMemo(
     () => expenses.reduce((sum, item) => sum + item.amount, 0),
@@ -99,34 +109,56 @@ export function DashboardScreen() {
     [expenses],
   );
 
-  const handleComplete = useCallback(
-    async (item: ExpenseItem) => {
-      setLoadError(null);
+  const expenseShares = useMemo<ExpenseShareItem[]>(() => {
+    if (totalAmount <= 0) {
+      return [];
+    }
 
-      try {
-        if (authMode === "logged_in" && user) {
-          await insertExpense(user.userKey, item);
-          setExpenses(await listExpenses(user.userKey));
-        } else {
-          addExpense(item);
-          setExpenses(getExpenses());
-        }
-        setIsInputOpen(false);
-        setIsInitialInput(false);
-      } catch (error) {
-        console.error(error);
-        setLoadError(
-          error instanceof Error ? error.message : "지출 저장에 실패했습니다.",
-        );
-      }
-    },
-    [authMode, user],
+    return [...expenses]
+      .sort((a, b) => b.amount - a.amount)
+      .map((item, index) => ({
+        id: `${item.sub_category}-${item.amount}-${item.reg_date ?? index}`,
+        label: getExpenseDisplayName(item.sub_category),
+        share: (item.amount / totalAmount) * 100,
+        color: getExpenseAccentColor(item),
+      }));
+  }, [expenses, totalAmount]);
+
+  const sortedExpenses = useMemo(
+    () => sortExpenses(expenses, sortOrder, sortReverse),
+    [expenses, sortOrder, sortReverse],
   );
 
+  const toggleSortReverse = useCallback(() => {
+    setSortReverse((prev) => !prev);
+  }, []);
+
+  const handleComplete = useCallback((item: ExpenseItem) => {
+    setLoadError(null);
+
+    try {
+      addExpense(item);
+      setExpenses(getExpenses());
+      if (isInitialInput) {
+        setInitialGuideCompleted();
+      }
+      setIsInputOpen(false);
+      setIsInitialInput(false);
+    } catch (error) {
+      console.error(error);
+      setLoadError(
+        error instanceof Error ? error.message : "지출 저장에 실패했습니다.",
+      );
+    }
+  }, [isInitialInput]);
+
   const handleCloseInput = useCallback(() => {
+    if (isInitialInput) {
+      setInitialGuideCompleted();
+    }
     setIsInputOpen(false);
     setIsInitialInput(false);
-  }, []);
+  }, [isInitialInput]);
 
   const openAddFlow = useCallback(() => {
     setIsInitialInput(false);
@@ -134,7 +166,7 @@ export function DashboardScreen() {
   }, []);
 
   return (
-    <>
+    <div className="dashboard-screen">
       <Top
         title={<Top.TitleParagraph size={22}>월지출계산기</Top.TitleParagraph>}
         subtitleBottom={
@@ -144,180 +176,176 @@ export function DashboardScreen() {
         }
       />
 
-      {loadError ? (
-        <p
-          style={{
-            margin: "0 20px 16px",
-            color: "#E42939",
-            fontSize: 14,
-            lineHeight: 1.5,
-          }}
-        >
-          {loadError}
-        </p>
-      ) : null}
+      {loadError ? <p className="dashboard-screen__error">{loadError}</p> : null}
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 16,
-          padding: "0 20px 32px",
-        }}
-      >
-        <section
-          style={{
-            padding: 20,
-            borderRadius: 16,
-            background: "linear-gradient(135deg, #FFF5FB 0%, #F8F4FF 100%)",
-          }}
-        >
-          <p style={{ margin: 0, color: "#6B7684", fontSize: 14 }}>
-            이번 달 총 고정지출
-          </p>
-          <p
-            style={{
-              margin: "8px 0 0",
-              fontSize: 28,
-              fontWeight: 700,
-              color: "#191F28",
-            }}
-          >
-            {formatAmount(totalAmount)}
-          </p>
-          <p style={{ margin: "8px 0 0", color: "#8B95A1", fontSize: 14 }}>
-            연간 예상 {formatAmount(totalAmount * 12)}
-          </p>
-        </section>
+      <div className="dashboard-screen__body">
+        <div className="dashboard-screen__summary-area">
+          <section className="dashboard-screen__summary">
+            <div className="dashboard-screen__summary-main">
+              <p className="dashboard-screen__summary-label">이번 달 총 고정지출</p>
+              <p className="dashboard-screen__summary-amount">
+                {formatAmount(totalAmount)}
+              </p>
+              <p className="dashboard-screen__summary-sub">
+                연간 예상 {formatAmount(totalAmount * 12)}
+              </p>
+            </div>
 
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 12,
-          }}
-        >
-          <div
-            style={{
-              padding: 16,
-              borderRadius: 12,
-              backgroundColor: "#F9FAFB",
-            }}
-          >
-            <p style={{ margin: 0, color: "#6B7684", fontSize: 13 }}>
-              생활 고정비
-            </p>
-            <p style={{ margin: "6px 0 0", fontWeight: 600 }}>
-              {formatAmount(livingAmount)}
-            </p>
-          </div>
-          <div
-            style={{
-              padding: 16,
-              borderRadius: 12,
-              backgroundColor: "#F9FAFB",
-            }}
-          >
-            <p style={{ margin: 0, color: "#6B7684", fontSize: 13 }}>
-              구독 서비스
-            </p>
-            <p style={{ margin: "6px 0 0", fontWeight: 600 }}>
-              {formatAmount(subscriptionAmount)}
-            </p>
-          </div>
-        </section>
+            {expenseShares.length > 0 ? (
+              <div className="dashboard-screen__breakdown">
+                <p className="dashboard-screen__breakdown-title">항목별 비중</p>
+                <div
+                  className="dashboard-screen__breakdown-bar"
+                  aria-hidden="true"
+                >
+                  {expenseShares.map((item) => (
+                    <span
+                      key={item.id}
+                      className="dashboard-screen__breakdown-segment"
+                      style={{
+                        flexGrow: item.share,
+                        backgroundColor: item.color,
+                      }}
+                    />
+                  ))}
+                </div>
+                <ul className="dashboard-screen__breakdown-list">
+                  {expenseShares.map((item) => (
+                    <li
+                      key={item.id}
+                      className="dashboard-screen__breakdown-row"
+                    >
+                      <span
+                        className="dashboard-screen__breakdown-dot"
+                        style={{ backgroundColor: item.color }}
+                        aria-hidden="true"
+                      />
+                      <span className="dashboard-screen__breakdown-name">
+                        {item.label}
+                      </span>
+                      <span className="dashboard-screen__breakdown-share">
+                        {formatSharePercent(item.share)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </section>
 
-        <section>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 12,
-            }}
-          >
-            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>
-              등록한 항목
-            </h2>
+          <section className="dashboard-screen__stats">
+            <div className="dashboard-screen__stat-card">
+              <p className="dashboard-screen__stat-label">생활 고정비</p>
+              <p className="dashboard-screen__stat-value">
+                {formatAmount(livingAmount)}
+              </p>
+            </div>
+            <div className="dashboard-screen__stat-card">
+              <p className="dashboard-screen__stat-label">구독 서비스</p>
+              <p className="dashboard-screen__stat-value">
+                {formatAmount(subscriptionAmount)}
+              </p>
+            </div>
+          </section>
+        </div>
+
+        <section className="dashboard-screen__list-section">
+          <div className="dashboard-screen__list-header">
+            <div className="dashboard-screen__list-header-main">
+              <h2 className="dashboard-screen__list-title">등록한 항목</h2>
+              {expenses.length > 0 ? (
+                <div className="dashboard-screen__list-controls">
+                  <select
+                    className="dashboard-screen__sort-select"
+                    value={sortOrder}
+                    onChange={(event) =>
+                      setSortOrder(event.target.value as ExpenseSortOrder)
+                    }
+                    aria-label="정렬 기준"
+                  >
+                    {EXPENSE_SORT_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className={`dashboard-screen__sort-reverse${
+                      sortReverse
+                        ? " dashboard-screen__sort-reverse--active"
+                        : ""
+                    }`}
+                    onClick={toggleSortReverse}
+                    aria-label={sortReverse ? "오름차순" : "내림차순"}
+                    title={sortReverse ? "오름차순" : "내림차순"}
+                  >
+                    {sortReverse ? "↑" : "↓"}
+                  </button>
+                </div>
+              ) : null}
+            </div>
             <Button size="small" variant="weak" onClick={openAddFlow}>
               추가
             </Button>
           </div>
 
-          {expenses.length === 0 ? (
-            <div
-              style={{
-                padding: 24,
-                borderRadius: 12,
-                backgroundColor: "#F9FAFB",
-                textAlign: "center",
-                color: "#6B7684",
-                lineHeight: 1.6,
-              }}
-            >
-              아직 등록된 지출이 없어요.
-              <br />
-              고정지출을 입력해 보세요.
-            </div>
-          ) : (
-            <ul
-              style={{
-                margin: 0,
-                padding: 0,
-                listStyle: "none",
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-              }}
-            >
-              {expenses.map((item, index) => (
-                <li
-                  key={`${item.sub_category}-${item.amount}-${index}`}
-                  style={{
-                    padding: 16,
-                    borderRadius: 12,
-                    backgroundColor: "#FFFFFF",
-                    border: "1px solid #EEF1F4",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 12,
-                    }}
+          <div className="dashboard-screen__list-scroll">
+            {expenses.length === 0 ? (
+              <div className="dashboard-screen__empty">
+                아직 등록된 지출이 없어요.
+                <br />
+                고정지출을 입력해 보세요.
+              </div>
+            ) : (
+              <ul className="dashboard-screen__list">
+                {sortedExpenses.map((item, index) => {
+                  const itemMeta = formatExpenseMeta(item);
+
+                  return (
+                  <li
+                    key={`${item.sub_category}-${item.amount}-${item.reg_date ?? index}`}
+                    className="dashboard-screen__list-item"
                   >
-                    <div>
-                      <p style={{ margin: 0, fontWeight: 600 }}>
-                        {item.sub_category}
-                      </p>
-                      <p
-                        style={{
-                          margin: "4px 0 0",
-                          color: "#8B95A1",
-                          fontSize: 13,
-                        }}
-                      >
-                        {formatExpenseMeta(item)}
+                    <div className="dashboard-screen__item-row">
+                      <div className="dashboard-screen__item-main">
+                        <span
+                          className="dashboard-screen__item-icon"
+                          aria-label={item.category}
+                        >
+                          <MainCategoryIcon category={item.category} />
+                        </span>
+                        <div className="dashboard-screen__item-text">
+                          <p className="dashboard-screen__item-name">
+                            {item.sub_category}
+                          </p>
+                          {itemMeta ? (
+                            <p className="dashboard-screen__item-meta">
+                              {itemMeta}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                      <p className="dashboard-screen__item-amount">
+                        {formatAmount(item.amount)}
                       </p>
                     </div>
-                    <p style={{ margin: 0, fontWeight: 600, whiteSpace: "nowrap" }}>
-                      {formatAmount(item.amount)}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+                  </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </section>
       </div>
 
       <ExpenseInputFlow
         open={isInputOpen}
         allowDismiss={!isInitialInput}
+        showSkip={isInitialInput}
         onComplete={handleComplete}
         onClose={handleCloseInput}
       />
-    </>
+    </div>
   );
 }

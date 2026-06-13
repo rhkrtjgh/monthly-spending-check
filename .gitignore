@@ -10,11 +10,6 @@ build/
 .env
 .env.*
 !.env.example
-!server/.env.server.example
-
-# Auth server secrets (mTLS certs, Toss decrypt keys)
-server/.env.server
-server/cert/
 
 # Logs
 logs/

@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "dev": "granite dev",
-    "dev:server": "npm run dev --prefix server",
     "build": "ait build",
     "deploy": "ait deploy",
     "lint": "eslint .",
@@ -14,7 +13,6 @@
   "dependencies": {
     "@apps-in-toss/web-framework": "^2.6.1",
     "@emotion/react": "^11.14.0",
-    "@supabase/supabase-js": "^2.107.0",
     "@toss/tds-colors": "^0.1.0",
     "@toss/tds-mobile": "^2.4.0",
     "@toss/tds-mobile-ait": "^2.4.0",

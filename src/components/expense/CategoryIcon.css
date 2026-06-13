@@ -7,18 +7,14 @@
   height: 44px;
   border-radius: 12px;
   background: var(--icon-bg, #f2f4f6);
-  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 4%);
+  box-shadow: inset 0 0 0 2px transparent;
   transition:
     background-color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.15s ease;
+    box-shadow 0.15s ease;
 }
 
 .category-icon--selected {
-  box-shadow:
-    inset 0 0 0 2px var(--icon-accent, #ff91d5),
-    0 4px 12px rgb(0 0 0 / 6%);
-  transform: scale(1.02);
+  box-shadow: inset 0 0 0 2px var(--icon-accent, #ff91d5);
 }
 
 .category-icon svg {

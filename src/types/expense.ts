@@ -15,6 +15,8 @@ export const EXPENSE_FREQUENCY = {
 export type ExpenseFrequency =
   (typeof EXPENSE_FREQUENCY)[keyof typeof EXPENSE_FREQUENCY];
 
+export type ExpenseSortOrder = "latest" | "amount" | "category";
+
 /** TS_MNA_EXP_INFO 컬럼과 동일 (userKey 제외) */
 export interface ExpenseItem {
   category: ExpenseCategory;
@@ -22,6 +24,7 @@ export interface ExpenseItem {
   amount: number;
   due_date?: number;
   frequency?: ExpenseFrequency;
+  reg_date?: string;
 }
 
 export interface ExpenseFormDraft {

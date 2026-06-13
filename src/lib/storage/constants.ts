@@ -1,7 +1,5 @@
 export const STORAGE_KEYS = {
   ONBOARDING_COMPLETED: "msc_onboarding_completed",
-  AUTH_MODE: "msc_auth_mode",
-  SESSION_TOKEN: "msc_session_token",
+  INITIAL_GUIDE_COMPLETED: "msc_initial_guide_completed",
   EXPENSES: "msc_expenses",
-  MIGRATION_COMPLETED: "msc_migration_completed",
 } as const;

@@ -1,7 +1,8 @@
 import type { ExpenseItem } from "../../types/expense";
+import { ensureExpenseRegDates } from "../expense/ensureExpenseRegDates";
 import { STORAGE_KEYS } from "./constants";
 
-function readExpenses(): ExpenseItem[] {
+function readExpensesRaw(): ExpenseItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.EXPENSES);
     if (!raw) {
@@ -15,17 +16,37 @@ function readExpenses(): ExpenseItem[] {
   }
 }
 
+function readExpenses(): ExpenseItem[] {
+  return ensureExpenseRegDates(readExpensesRaw());
+}
+
 function writeExpenses(expenses: ExpenseItem[]) {
   localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
 }
 
 export function getExpenses(): ExpenseItem[] {
-  return readExpenses();
+  const raw = readExpensesRaw();
+  const normalized = ensureExpenseRegDates(raw);
+
+  const needsPersist = raw.some(
+    (item, index) => item.reg_date !== normalized[index]?.reg_date,
+  );
+  if (needsPersist) {
+    writeExpenses(normalized);
+  }
+
+  return normalized;
 }
 
 export function addExpense(item: ExpenseItem) {
   const expenses = readExpenses();
-  writeExpenses([...expenses, item]);
+  writeExpenses([
+    ...expenses,
+    {
+      ...item,
+      reg_date: item.reg_date ?? new Date().toISOString(),
+    },
+  ]);
 }
 
 export function hasExpenses(): boolean {

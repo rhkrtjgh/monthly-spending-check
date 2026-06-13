@@ -4,15 +4,12 @@ import { createRoot } from "react-dom/client";
 
 import config from "../granite.config.ts";
 import App from "./App.tsx";
-import { AuthProvider } from "./context/AuthContext.tsx";
 import "./index.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <TDSMobileAITProvider brandPrimaryColor={config.brand.primaryColor}>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
+      <App />
     </TDSMobileAITProvider>
   </StrictMode>,
 );

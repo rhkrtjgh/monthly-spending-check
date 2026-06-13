@@ -8,7 +8,8 @@ import {
 import { useMemo, useState, type CSSProperties } from "react";
 
 import config from "../../../granite.config.ts";
-import { getSubCategoryOptions } from "../../constants/expenseSubCategories";
+import { getSubCategoryOptions, getSubCategoryPlaceholder } from "../../constants/expenseSubCategories";
+import { convertToMonthlyAmount, getAmountInputHint } from "../../lib/expense/convertToMonthlyAmount";
 import { MainCategoryIcon, SubCategoryIcon } from "./CategoryIcon";
 import type {
   ExpenseCategory,
@@ -60,6 +61,7 @@ const INITIAL_DRAFT: ExpenseFormDraft = {
 interface ExpenseInputFlowProps {
   open: boolean;
   allowDismiss?: boolean;
+  showSkip?: boolean;
   onComplete: (item: ExpenseItem) => void;
   onClose?: () => void;
 }
@@ -82,26 +84,30 @@ function buildExpenseItem(draft: ExpenseFormDraft): ExpenseItem | null {
   }
 
   const amount = Number.parseInt(draft.amount.replace(/,/g, ""), 10);
-  if (!Number.isFinite(amount) || amount <= 0) {
+  if (!Number.isFinite(amount) || amount <= 0 || !draft.frequency) {
     return null;
   }
+
+  const monthlyAmount = convertToMonthlyAmount(amount, draft.frequency);
 
   const item: ExpenseItem = {
     category: draft.category,
     sub_category: formatStoredSubCategory(draft),
-    amount,
+    amount: monthlyAmount,
+    frequency: EXPENSE_FREQUENCY.MONTH,
   };
 
-  if (draft.due_date.trim()) {
+  if (
+    draft.frequency === EXPENSE_FREQUENCY.MONTH &&
+    draft.due_date.trim()
+  ) {
     const dueDate = Number.parseInt(draft.due_date, 10);
     if (dueDate >= 1 && dueDate <= 31) {
       item.due_date = dueDate;
     }
   }
 
-  if (draft.frequency) {
-    item.frequency = draft.frequency;
-  }
+  item.reg_date = new Date().toISOString();
 
   return item;
 }
@@ -158,6 +164,7 @@ function StepFooter({
 export function ExpenseInputFlow({
   open,
   allowDismiss = false,
+  showSkip = false,
   onComplete,
   onClose,
 }: ExpenseInputFlowProps) {
@@ -167,6 +174,11 @@ export function ExpenseInputFlow({
   const subCategoryOptions = useMemo(
     () => getSubCategoryOptions(draft.category),
     [draft.category],
+  );
+
+  const itemNamePlaceholder = useMemo(
+    () => getSubCategoryPlaceholder(draft.sub_category_group),
+    [draft.sub_category_group],
   );
 
   const stepMeta = useMemo(() => {
@@ -189,7 +201,7 @@ export function ExpenseInputFlow({
       default:
         return {
           title: "금액과 결제 정보",
-          subtitle: "금액은 필수, 결제일·빈도는 선택이에요",
+          subtitle: "빈도를 선택한 뒤 금액을 입력해 주세요",
         };
     }
   }, [step, draft.category]);
@@ -197,7 +209,10 @@ export function ExpenseInputFlow({
   const canProceedStep1 = draft.category !== null;
   const canProceedStep2 = draft.sub_category_group !== null;
   const canProceedStep3 = draft.sub_category.trim().length > 0;
-  const canCompleteStep4 = buildExpenseItem(draft) !== null;
+  const canCompleteStep4 =
+    draft.frequency !== null && buildExpenseItem(draft) !== null;
+
+  const amountInputHint = getAmountInputHint(draft.frequency);
 
   if (!open) {
     return null;
@@ -230,6 +245,11 @@ export function ExpenseInputFlow({
     }
   };
 
+  const handleDismiss = () => {
+    handleReset();
+    onClose?.();
+  };
+
   const handleSelectCategory = (category: ExpenseCategory) => {
     setDraft((prev) => ({
       ...prev,
@@ -252,30 +272,26 @@ export function ExpenseInputFlow({
         }
       />
 
-      {allowDismiss && step === 1 ? (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            padding: "0 20px 8px",
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => {
-              handleReset();
-              onClose?.();
-            }}
-            style={{
-              border: "none",
-              background: "transparent",
-              color: "#8B95A1",
-              fontSize: 15,
-              cursor: "pointer",
-            }}
-          >
-            닫기
-          </button>
+      {allowDismiss || showSkip ? (
+        <div className="expense-input-flow__header-action">
+          {showSkip ? (
+            <button
+              type="button"
+              className="expense-input-flow__skip"
+              onClick={handleDismiss}
+            >
+              건너뛰기
+            </button>
+          ) : null}
+          {allowDismiss && step === 1 ? (
+            <button
+              type="button"
+              className="expense-input-flow__dismiss"
+              onClick={handleDismiss}
+            >
+              닫기
+            </button>
+          ) : null}
         </div>
       ) : null}
 
@@ -355,7 +371,7 @@ export function ExpenseInputFlow({
               <TextField.Clearable
                 variant="line"
                 label="항목명"
-                placeholder="예: 넷플릭스, 월세"
+                placeholder={itemNamePlaceholder}
                 value={draft.sub_category}
                 onChange={(event) =>
                   setDraft((prev) => ({
@@ -374,53 +390,15 @@ export function ExpenseInputFlow({
         {step === 4 ? (
           <div className="expense-input-flow__field-group">
             <div>
-              <TextField.Clearable
-                variant="line"
-                label="금액"
-                placeholder="0"
-                inputMode="numeric"
-                suffix="원"
-                value={draft.amount}
-                onChange={(event) =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    amount: event.target.value.replace(/[^\d]/g, ""),
-                  }))
-                }
-              />
-            </div>
-
-            <div>
-              <label className="expense-input-flow__field-label">
-                결제일
-                <span className="expense-input-flow__optional">(선택)</span>
-              </label>
-              <TextField.Clearable
-                variant="line"
-                placeholder="1~31"
-                inputMode="numeric"
-                suffix="일"
-                value={draft.due_date}
-                onChange={(event) =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    due_date: event.target.value.replace(/[^\d]/g, "").slice(0, 2),
-                  }))
-                }
-              />
-            </div>
-
-            <div>
-              <label className="expense-input-flow__field-label">
-                빈도
-                <span className="expense-input-flow__optional">(선택)</span>
-              </label>
+              <label className="expense-input-flow__field-label">빈도</label>
               <SegmentedControl
                 value={draft.frequency ?? ""}
                 onChange={(value) =>
                   setDraft((prev) => ({
                     ...prev,
                     frequency: value as ExpenseFrequency,
+                    due_date:
+                      value === EXPENSE_FREQUENCY.MONTH ? prev.due_date : "",
                   }))
                 }
               >
@@ -434,6 +412,46 @@ export function ExpenseInputFlow({
                 ))}
               </SegmentedControl>
             </div>
+
+            <div>
+              <label className="expense-input-flow__field-label">금액</label>
+              <TextField.Clearable
+                variant="line"
+                placeholder="0"
+                inputMode="numeric"
+                suffix="원"
+                value={draft.amount}
+                onChange={(event) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    amount: event.target.value.replace(/[^\d]/g, ""),
+                  }))
+                }
+              />
+              <p className="expense-input-flow__hint">{amountInputHint}</p>
+            </div>
+
+            {draft.frequency === EXPENSE_FREQUENCY.MONTH ? (
+              <div>
+                <label className="expense-input-flow__field-label">
+                  결제일
+                  <span className="expense-input-flow__optional">(선택)</span>
+                </label>
+                <TextField.Clearable
+                  variant="line"
+                  placeholder="1~31"
+                  inputMode="numeric"
+                  suffix="일"
+                  value={draft.due_date}
+                  onChange={(event) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      due_date: event.target.value.replace(/[^\d]/g, "").slice(0, 2),
+                    }))
+                  }
+                />
+              </div>
+            ) : null}
 
             <p className="expense-input-flow__hint">
               {draft.sub_category_group} · {draft.sub_category || "항목"} ·{" "}
