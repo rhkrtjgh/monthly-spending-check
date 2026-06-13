@@ -338,11 +338,23 @@ export function DashboardScreen() {
             </div>
             <div className="dashboard-screen__list-actions">
               {expenses.length > 0 ? (
-                <Button size="small" variant="weak" onClick={startDeleteMode}>
+                <Button
+                  size="small"
+                  color="primary"
+                  variant="weak"
+                  className="dashboard-screen__action-button"
+                  onClick={startDeleteMode}
+                >
                   편집
                 </Button>
               ) : null}
-              <Button size="small" variant="weak" onClick={openAddFlow}>
+              <Button
+                size="small"
+                color="primary"
+                variant="weak"
+                className="dashboard-screen__action-button"
+                onClick={openAddFlow}
+              >
                 추가
               </Button>
             </div>

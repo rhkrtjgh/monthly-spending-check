@@ -1,3 +1,4 @@
+import { createId } from "../createId";
 import {
   EXPENSE_FREQUENCY,
   type ExpenseFormDraft,
@@ -62,7 +63,7 @@ export function buildExpenseItemFromDraft(
   const monthlyAmount = convertToMonthlyAmount(amount, draft.frequency);
 
   const item: ExpenseItem = {
-    id: existing?.id ?? crypto.randomUUID(),
+    id: existing?.id ?? createId(),
     category: draft.category,
     sub_category: formatStoredSubCategory(draft),
     amount: monthlyAmount,
@@ -84,5 +85,14 @@ export function buildExpenseItemFromDraft(
 }
 
 export function isExpenseDraftComplete(draft: ExpenseFormDraft): boolean {
-  return buildExpenseItemFromDraft(draft) !== null;
+  if (
+    !draft.category ||
+    !draft.sub_category_group ||
+    !draft.sub_category.trim() ||
+    !draft.frequency
+  ) {
+    return false;
+  }
+
+  return parseAmountValue(draft.amount, draft.frequency) !== null;
 }

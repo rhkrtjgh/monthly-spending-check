@@ -1,5 +1,9 @@
 :root {
   font-family: sans-serif;
+  --brand-primary: #3182f6;
+  --brand-primary-weak: #e8f3ff;
+  --brand-primary-soft: #f0f7ff;
+  --brand-primary-muted: #c9e2ff;
 }
 
 *,

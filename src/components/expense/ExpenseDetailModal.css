@@ -63,7 +63,7 @@
 
 .expense-detail-modal__category-card--selected {
   border-color: var(--brand-color);
-  background: #fff5fb;
+  background: var(--brand-primary-weak);
 }
 
 .expense-detail-modal__category-card .category-icon {
@@ -105,7 +105,7 @@
 
 .expense-detail-modal__subcategory-chip--selected {
   border-color: var(--brand-color);
-  background: #fff5fb;
+  background: var(--brand-primary-weak);
   color: #191f28;
   font-weight: 600;
 }

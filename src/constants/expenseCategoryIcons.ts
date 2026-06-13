@@ -27,7 +27,7 @@ export interface CategoryIconColor {
 }
 
 export const CATEGORY_ICON_COLORS: Record<string, CategoryIconColor> = {
-  "expense-living": { background: "#FFF0F8", accent: "#FF91D5" },
+  "expense-living": { background: "#E8F3FF", accent: "#3182F6" },
   "expense-subscription": { background: "#F0F3FF", accent: "#6B7CFF" },
   "expense-food": { background: "#FFF4ED", accent: "#FF8C42" },
   "expense-housing": { background: "#EDF4FF", accent: "#4B8BFF" },

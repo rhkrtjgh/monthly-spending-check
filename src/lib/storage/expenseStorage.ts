@@ -1,3 +1,4 @@
+import { createId } from "../createId";
 import type { ExpenseItem } from "../../types/expense";
 import { ensureExpenseRegDates } from "../expense/ensureExpenseRegDates";
 import { STORAGE_KEYS } from "./constants";
@@ -5,7 +6,7 @@ import { STORAGE_KEYS } from "./constants";
 function ensureExpenseIds(items: ExpenseItem[]): ExpenseItem[] {
   return items.map((item) => ({
     ...item,
-    id: item.id ?? crypto.randomUUID(),
+    id: item.id ?? createId(),
   }));
 }
 
@@ -59,7 +60,7 @@ export function addExpense(item: ExpenseItem) {
     ...expenses,
     {
       ...item,
-      id: item.id ?? crypto.randomUUID(),
+      id: item.id ?? createId(),
       reg_date: item.reg_date ?? new Date().toISOString(),
     },
   ]);
