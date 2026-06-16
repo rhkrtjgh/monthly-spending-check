@@ -19,7 +19,7 @@ export const SUB_CATEGORY_ICON_IDS: Record<string, string> = {
   "업무/IT": "expense-work-it",
 };
 
-export const EXPENSE_CATEGORY_SPRITE = "/sprites/expense-categories.svg";
+export const EXPENSE_CATEGORY_SPRITE = `${import.meta.env.BASE_URL}sprites/expense-categories.svg`;
 
 export interface CategoryIconColor {
   background: string;
